@@ -1,13 +1,50 @@
 // create context
 
-import React, { createContext, useState } from "react";
+import { auth, db } from "@/config/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { useRouter } from "next/router";
+import React, { createContext, useEffect, useState } from "react";
 
 export const UserContext = createContext({
   user: {},
   setUser: ({}) => {},
 });
 export const UserProvider = ({ children }) => {
+  const router = useRouter();
+  const { type } = router.query;
   const [user, setUser] = useState(null);
+
+  const stateHandler = async () => {
+    onAuthStateChanged(auth, (user) => {
+      console.log("user", user);
+      if (user) {
+        const docRef = query(
+          collection(db, "users"),
+          where("email", "==", user.email)
+        );
+        getDocs(docRef).then((querySnapshot) => {
+          console.log("querySnapshot", querySnapshot);
+          if (!querySnapshot.empty) {
+            const u = querySnapshot.docs[0].data().type;
+            setUser({
+              id: querySnapshot.docs[0].id,
+              type: u,
+              email: querySnapshot.docs[0].data().email,
+            });
+            router.push(`/dashboard/${u}`);
+            return;
+          }
+        });
+      } else {
+        router.push("/");
+      }
+    });
+  };
+  useEffect(() => {
+    stateHandler();
+  }, []);
+
   return (
     <UserContext.Provider value={{ user, setUser }}>
       {children}
