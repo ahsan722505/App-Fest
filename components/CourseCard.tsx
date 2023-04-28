@@ -1,7 +1,8 @@
+import { UserContext } from "@/contexts/userContext";
 import { Course } from "@/pages/dashboard/teacher";
 import { Button } from "@mui/material";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import RequestEnrollment from "./Student/RequestEnrollment";
 export type EnrollStatus =
   | "pending"
@@ -12,21 +13,24 @@ export type EnrollStatus =
 const CourseCard = ({ course }: { course: Course }) => {
   const router = useRouter();
   const [enrollStatus, setEnrollStatus] = useState<EnrollStatus>("");
-
+  const { user } = useContext(UserContext);
   return (
     <div
       onClick={() =>
-        enrollStatus === "enrolled" && router.push(`/courses/${course.id}`)
+        enrollStatus === "enrolled" ||
+        (user.type === "teacher" && router.push(`/courses/${course.id}`))
       }
       style={{ background: "red", marginBottom: "2rem", cursor: "pointer" }}
     >
       <h1>{course.name}</h1>
       <p>{course.overview}</p>
-      <RequestEnrollment
-        courseId={course.id}
-        enrollStatus={enrollStatus}
-        setEnrollStatus={setEnrollStatus}
-      />
+      {user.type === "student" && (
+        <RequestEnrollment
+          courseId={course.id}
+          enrollStatus={enrollStatus}
+          setEnrollStatus={setEnrollStatus}
+        />
+      )}
     </div>
   );
 };

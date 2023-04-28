@@ -6,10 +6,15 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { useRouter } from "next/router";
 import React, { createContext, useEffect, useState } from "react";
 
-export const UserContext = createContext({
-  user: {},
-  setUser: ({}) => {},
-});
+type User = {
+  id: string;
+  type: "student" | "teacher";
+  email: string;
+};
+export const UserContext = createContext<{
+  user: User;
+  setUser: (arg: User) => void;
+}>({ user: null, setUser: null });
 export const UserProvider = ({ children }) => {
   const router = useRouter();
   const { type } = router.query;

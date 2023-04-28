@@ -1,8 +1,9 @@
 import { db } from "@/config/firebase";
+import { UserContext } from "@/contexts/userContext";
 import { Button } from "@mui/material";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { EnrollStatus } from "../CourseCard";
 
 const RequestEnrollment = ({
@@ -15,11 +16,14 @@ const RequestEnrollment = ({
   setEnrollStatus: (arg: EnrollStatus) => void;
 }) => {
   const router = useRouter();
+  const { user } = useContext(UserContext);
+  console.log("user", user);
+
   useEffect(() => {
     const q = query(
       collection(db, "enrollmentRequests"),
       where("courseId", "==", courseId),
-      where("userId", "==", "20OKysQ5TDmeidHpCWwA")
+      where("userId", "==", user.id)
     );
 
     getDocs(q).then((querySnapshot) => {
@@ -32,12 +36,12 @@ const RequestEnrollment = ({
       if (!tempStatus) setEnrollStatus("unrequested");
       else setEnrollStatus(tempStatus);
     });
-  }, []);
+  }, [user.id]);
 
   const enrollHandler = async () => {
     await addDoc(collection(db, "enrollmentRequests"), {
       courseId: courseId,
-      userId: "20OKysQ5TDmeidHpCWwA",
+      userId: user.id,
       status: "pending",
     });
     setEnrollStatus("pending");
