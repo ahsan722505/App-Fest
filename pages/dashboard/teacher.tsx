@@ -9,6 +9,7 @@ export type Course = {
 };
 import { db } from "@/config/firebase";
 import { addDoc, collection, doc, getDocs, setDoc } from "firebase/firestore";
+import Courses from "@/components/Courses";
 export default function Teacher() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [showCreateCourseModal, setShowCreateCourseModal] = useState<boolean>();
@@ -23,24 +24,13 @@ export default function Teacher() {
     setCourses([...courses, { ...course, id: doc.id }]);
     setShowCreateCourseModal(false);
   };
-  useEffect(() => {
-    getDocs(collection(db, "courses")).then((querySnapshot) => {
-      const data: Course[] = [];
-      querySnapshot.forEach((doc) => {
-        const docId = doc.id;
-        data.push({ ...doc.data(), id: docId } as Course);
-      });
-      setCourses(data);
-    });
-  }, []);
+
   return (
     <>
       <Button onClick={() => setShowCreateCourseModal(true)}>
         Create Course
       </Button>
-      {courses.map((course) => (
-        <CourseCard course={course} />
-      ))}
+      <Courses courses={courses} setCourses={setCourses} />
       <CreateCourse
         showModal={showCreateCourseModal}
         setShowModal={setShowCreateCourseModal}

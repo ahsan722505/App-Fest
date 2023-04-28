@@ -107,6 +107,7 @@ const Signup = () => {
         userCTX.setUser({
           id: doc.id,
           type: doc.data().type,
+          email: doc.data().email,
         });
 
         snackCTX.setSnackInfo({
@@ -127,7 +128,8 @@ const Signup = () => {
       console.log("Document written with ID: ", doc.id);
       userCTX.setUser({
         id: doc.id,
-        type: type,
+        type: type as "student" | "teacher",
+        email: userCredential.user.email,
       });
 
       snackCTX.setSnackInfo({
@@ -183,7 +185,7 @@ const Signup = () => {
       userCTX.setUser({
         id: fireStoreDocId,
         email: result.user.email,
-        type: type,
+        type: type as "student" | "teacher",
       });
       snackCTX.setSnackInfo({
         open: true,
@@ -236,9 +238,10 @@ const Signup = () => {
           </button>
 
           <p className="text-[#828282] text-[20px] mt-4 my-5">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <span
               className="text-[#3F6AE0]"
+              style={{ cursor: "pointer" }}
               onClick={() =>
                 router.push({
                   pathname: "/login",
@@ -258,7 +261,7 @@ const Signup = () => {
             className="w-full mt-4 py-3.5 bg-[#0077b5 flex items-center justify-center gap-5 bg-slate-100 rounded"
           >
             {google}
-            Log in with Google
+            Sign up with Google
           </button>
         </div>
       </div>
