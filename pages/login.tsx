@@ -1,7 +1,23 @@
 import { useRouter } from "next/router";
-import React from "react";
+import React, { useContext, useState } from "react";
 import { TextField, Button } from "@mui/material";
-import Image from "next/image";
+import { auth, db } from "../config/firebase";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
+import {
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
+import { UserContext } from "@/contexts/userContext";
+import { SnackContext } from "@/contexts/SnackbarContext";
 
 let google = (
   <svg
@@ -20,7 +36,7 @@ let google = (
       stroke="none"
       stroke-width="1"
       fill="none"
-      fill-rule="evenodd"
+      fillRule="evenodd"
       transform="translate(-732.000000, -965.000000)"
     >
       <g id="Group" transform="translate(608.000000, 944.000000)">
@@ -56,9 +72,82 @@ let google = (
 );
 
 const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const router = useRouter();
   const { type } = router.query;
-  //   make login page with email password textdield. OR text , google button
+  const provider = new GoogleAuthProvider();
+  const userCTX = useContext(UserContext);
+  const snackCTX = useContext(SnackContext);
+
+  const handleEmailLogin = async () => {
+    try {
+      const result = await signInWithEmailAndPassword(
+        auth, // auth instance
+        email, // email
+        password // password
+      );
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      // check if user exists in db
+      const docRef = query(
+        collection(db, "users"),
+        where("email", "==", result.user.email)
+      );
+      const querySnapshot = await getDocs(docRef);
+      if (!querySnapshot.empty) {
+        userCTX.setUser(result.user);
+        snackCTX.setSnackInfo({
+          open: true,
+          message: "Logged in successfuly",
+          severity: "success",
+        });
+        router.push(`/dashboard/${type}`);
+        return;
+      } else {
+        // doc.data() will be undefined in this case
+        throw new Error("User does not exist");
+      }
+    } catch (error) {
+      console.log(error);
+      snackCTX.setSnackInfo({
+        open: true,
+        message: "Sign in failed!",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      // check if user exists in db
+      const docRef = query(
+        collection(db, "users"),
+        where("email", "==", result.user.email)
+      );
+      const querySnapshot = await getDocs(docRef);
+      if (!querySnapshot.empty) {
+        userCTX.setUser(result.user);
+        snackCTX.setSnackInfo({
+          open: true,
+          message: "Logged in successfuly",
+          severity: "success",
+        });
+        router.push(`/dashboard/${type}`);
+        return;
+      } else {
+        // doc.data() will be undefined in this case
+        throw new Error("User does not exist");
+      }
+    } catch (error) {
+      snackCTX.setSnackInfo({
+        open: true,
+        message: "Sign in failed!",
+        severity: "error",
+      });
+    }
+  };
   return (
     <div>
       <div className="max-w-[400px] mx-auto">
@@ -72,6 +161,8 @@ const Login = () => {
             label="Email"
             variant="outlined"
             className="w-full"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
 
           <TextField
@@ -80,9 +171,14 @@ const Login = () => {
             variant="outlined"
             className="w-full mt-4"
             sx={{ marginTop: "20px" }}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button className="w-full mt-4 bg-[#00cc83] text-white py-3.5 text-lg">
+          <button
+            onClick={handleEmailLogin}
+            className="w-full mt-4 bg-[#00cc83] text-white py-3.5 text-lg"
+          >
             Log in
           </button>
 
@@ -104,7 +200,10 @@ const Login = () => {
           </p>
 
           <p className="text-center py-4">OR</p>
-          <button className="w-full mt-4 py-3.5 bg-[#0077b5 flex items-center justify-center gap-5 bg-slate-100 rounded">
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full mt-4 py-3.5 bg-[#0077b5 flex items-center justify-center gap-5 bg-slate-100 rounded"
+          >
             {google}
             Log in with Google
           </button>

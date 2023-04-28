@@ -1,7 +1,22 @@
 import { useRouter } from "next/router";
-import React from "react";
-import { TextField, Button } from "@mui/material";
-import Image from "next/image";
+import React, { useContext, useEffect, useState } from "react";
+import { TextField } from "@mui/material";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { UserContext } from "@/contexts/userContext";
+import { SnackContext } from "@/contexts/SnackbarContext";
+import { auth, db } from "../config/firebase";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+
 let google = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -19,7 +34,7 @@ let google = (
       stroke="none"
       stroke-width="1"
       fill="none"
-      fill-rule="evenodd"
+      fillRule="evenodd"
       transform="translate(-732.000000, -965.000000)"
     >
       <g id="Group" transform="translate(608.000000, 944.000000)">
@@ -54,10 +69,109 @@ let google = (
   </svg>
 );
 
-const Login = () => {
+const Signup = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const router = useRouter();
   const { type } = router.query;
+  const userCTX = useContext(UserContext);
+  const snackCTX = useContext(SnackContext);
   //   make login page with email password textdield. OR text , google button
+  const provider = new GoogleAuthProvider();
+
+  useEffect(() => {
+    if (!type) router.push("/");
+  });
+
+  const handleSignup = async () => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      // check if user exists in db
+      const docRef = query(
+        collection(db, "users"),
+        where("email", "==", userCredential.user.email)
+      );
+      const querySnapshot = await getDocs(docRef);
+      if (!querySnapshot.empty) {
+        userCTX.setUser(userCredential.user);
+        snackCTX.setSnackInfo({
+          open: true,
+          message: "Signed up successfuly",
+          severity: "success",
+        });
+        return;
+      }
+      console.log("no user found");
+      await addDoc(collection(db, "users"), {
+        email: userCredential.user.email,
+        type: type,
+      });
+      console.log("set doc failed");
+
+      userCTX.setUser(userCredential.user);
+
+      snackCTX.setSnackInfo({
+        open: true,
+        message: "Signed up successfuly",
+        severity: "success",
+      });
+      router.push(`/dashboard/${type}`);
+    } catch (error) {
+      console.log(error);
+      const errorMessage = error.message;
+      console.log(errorMessage);
+      snackCTX.setSnackInfo({
+        open: true,
+        message: "Sign up failed!",
+        severity: "error",
+      });
+    }
+  };
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      // check if user exists in db
+      const docRef = query(
+        collection(db, "users"),
+        where("email", "==", result.user.email)
+      );
+      const querySnapshot = await getDocs(docRef);
+      if (!querySnapshot.empty) {
+        userCTX.setUser(result.user);
+        snackCTX.setSnackInfo({
+          open: true,
+          message: "Signed up successfuly",
+          severity: "success",
+        });
+        return;
+      }
+
+      await addDoc(collection(db, "users"), {
+        email: result.user.email,
+        type: type,
+      });
+      userCTX.setUser(result.user);
+      snackCTX.setSnackInfo({
+        open: true,
+        message: "Signed up successfuly",
+        severity: "success",
+      });
+      router.push(`/dashboard/${type}`);
+    } catch (error) {
+      const errorMessage = error.message;
+      console.log(errorMessage);
+      snackCTX.setSnackInfo({
+        open: true,
+        message: "Sign up failed!",
+        severity: "error",
+      });
+    }
+  };
   return (
     <div>
       <div className="max-w-[400px] mx-auto">
@@ -71,6 +185,8 @@ const Login = () => {
             label="Email"
             variant="outlined"
             className="w-full"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
 
           <TextField
@@ -79,9 +195,14 @@ const Login = () => {
             variant="outlined"
             className="w-full mt-4"
             sx={{ marginTop: "20px" }}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button className="w-full mt-4 bg-[#00cc83] text-white py-3.5 text-lg">
+          <button
+            onClick={handleSignup}
+            className="w-full mt-4 bg-[#00cc83] text-white py-3.5 text-lg"
+          >
             Sign up
           </button>
 
@@ -103,7 +224,10 @@ const Login = () => {
           </p>
 
           <p className="text-center py-4">OR</p>
-          <button className="w-full mt-4 py-3.5 bg-[#0077b5 flex items-center justify-center gap-5 bg-slate-100 rounded">
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full mt-4 py-3.5 bg-[#0077b5 flex items-center justify-center gap-5 bg-slate-100 rounded"
+          >
             {google}
             Log in with Google
           </button>
@@ -113,4 +237,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;
