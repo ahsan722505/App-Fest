@@ -1,7 +1,11 @@
 import { useRouter } from "next/router";
 import React, { useContext, useEffect, useState } from "react";
 import { TextField } from "@mui/material";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  inMemoryPersistence,
+  setPersistence,
+} from "firebase/auth";
 import { UserContext } from "@/contexts/userContext";
 import { SnackContext } from "@/contexts/SnackbarContext";
 import { auth, db } from "../config/firebase";
@@ -85,6 +89,7 @@ const Signup = () => {
 
   const handleSignup = async () => {
     try {
+      // await setPersistence(auth, inMemoryPersistence);
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -95,9 +100,15 @@ const Signup = () => {
         collection(db, "users"),
         where("email", "==", userCredential.user.email)
       );
+
       const querySnapshot = await getDocs(docRef);
       if (!querySnapshot.empty) {
-        userCTX.setUser(userCredential.user);
+        let doc = querySnapshot.docs[0];
+        userCTX.setUser({
+          id: doc.id,
+          type: doc.data().type,
+        });
+
         snackCTX.setSnackInfo({
           open: true,
           message: "Signed up successfuly",
@@ -106,13 +117,18 @@ const Signup = () => {
         return;
       }
       console.log("no user found");
-      await addDoc(collection(db, "users"), {
+      // get doc id that we are going to add
+
+      let doc = await addDoc(collection(db, "users"), {
         email: userCredential.user.email,
         type: type,
       });
-      console.log("set doc failed");
 
-      userCTX.setUser(userCredential.user);
+      console.log("Document written with ID: ", doc.id);
+      userCTX.setUser({
+        id: doc.id,
+        type: type,
+      });
 
       snackCTX.setSnackInfo({
         open: true,
@@ -133,6 +149,7 @@ const Signup = () => {
   };
   const handleGoogleLogin = async () => {
     try {
+      // await setPersistence(auth, inMemoryPersistence);
       const result = await signInWithPopup(auth, provider);
       // This gives you a Google Access Token. You can use it to access the Google API.
       // check if user exists in db
@@ -142,7 +159,13 @@ const Signup = () => {
       );
       const querySnapshot = await getDocs(docRef);
       if (!querySnapshot.empty) {
-        userCTX.setUser(result.user);
+        let doc = querySnapshot.docs[0];
+        userCTX.setUser({
+          id: doc.id,
+          email: doc.data().email,
+          type: doc.data().type,
+        });
+
         snackCTX.setSnackInfo({
           open: true,
           message: "Signed up successfuly",
@@ -151,11 +174,17 @@ const Signup = () => {
         return;
       }
 
-      await addDoc(collection(db, "users"), {
+      const res = await addDoc(collection(db, "users"), {
         email: result.user.email,
         type: type,
       });
-      userCTX.setUser(result.user);
+      // get doc id that we just added
+      let fireStoreDocId = res.id;
+      userCTX.setUser({
+        id: fireStoreDocId,
+        email: result.user.email,
+        type: type,
+      });
       snackCTX.setSnackInfo({
         open: true,
         message: "Signed up successfuly",

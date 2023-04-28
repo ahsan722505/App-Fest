@@ -13,6 +13,8 @@ import {
 } from "firebase/firestore";
 import {
   GoogleAuthProvider,
+  inMemoryPersistence,
+  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
@@ -82,6 +84,7 @@ const Login = () => {
 
   const handleEmailLogin = async () => {
     try {
+      // await setPersistence(auth, inMemoryPersistence);
       const result = await signInWithEmailAndPassword(
         auth, // auth instance
         email, // email
@@ -95,7 +98,16 @@ const Login = () => {
       );
       const querySnapshot = await getDocs(docRef);
       if (!querySnapshot.empty) {
-        userCTX.setUser(result.user);
+        let docId;
+        querySnapshot.forEach((doc) => {
+          docId = doc.id;
+        });
+
+        userCTX.setUser({
+          id: docId,
+          type: querySnapshot.docs[0].data().type,
+          email: querySnapshot.docs[0].data().email,
+        });
         snackCTX.setSnackInfo({
           open: true,
           message: "Logged in successfuly",
@@ -119,6 +131,7 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     try {
+      // await setPersistence(auth, inMemoryPersistence);
       const result = await signInWithPopup(auth, provider);
       // This gives you a Google Access Token. You can use it to access the Google API.
       // check if user exists in db
@@ -128,7 +141,15 @@ const Login = () => {
       );
       const querySnapshot = await getDocs(docRef);
       if (!querySnapshot.empty) {
-        userCTX.setUser(result.user);
+        let docId;
+        querySnapshot.forEach((doc) => {
+          docId = doc.id;
+        });
+        userCTX.setUser({
+          id: docId,
+          type: querySnapshot.docs[0].data().type,
+          email: querySnapshot.docs[0].data().email,
+        });
         snackCTX.setSnackInfo({
           open: true,
           message: "Logged in successfuly",
