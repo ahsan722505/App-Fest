@@ -1,10 +1,11 @@
+import EnrollmentRequests from "@/components/Teacher/EnrollmentRequests";
 import { useRouter } from "next/router";
 import React from "react";
 
 const Index = () => {
   const router = useRouter();
   const courseId = router.query.courseId;
-  return <div>{courseId}</div>;
+  return <EnrollmentRequests />;
 };
 
 export default Index;
