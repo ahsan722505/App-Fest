@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import React, { createContext, useEffect, useState } from "react";
 
 export const UserContext = createContext({
-  user: {},
+  user: { id: "", type: "", email: "" },
   setUser: ({}) => {},
 });
 export const UserProvider = ({ children }) => {
