@@ -95,6 +95,8 @@ const Login = () => {
       );
       const querySnapshot = await getDocs(docRef);
       if (!querySnapshot.empty) {
+        console.log(result.user);
+
         userCTX.setUser(result.user);
         snackCTX.setSnackInfo({
           open: true,
@@ -128,6 +130,8 @@ const Login = () => {
       );
       const querySnapshot = await getDocs(docRef);
       if (!querySnapshot.empty) {
+        console.log(result.user);
+
         userCTX.setUser(result.user);
         snackCTX.setSnackInfo({
           open: true,
